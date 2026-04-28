@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+__marimo__/cache/
+__marimo__/sessions/
+*__marimo__
