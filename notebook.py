@@ -5,6 +5,7 @@
 #     "matplotlib==3.10.9",
 #     "numpy==2.4.4",
 #     "pandas==3.0.2",
+#     "trendspyg==0.4.3",
 # ]
 # ///
 
