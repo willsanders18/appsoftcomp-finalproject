@@ -9,6 +9,7 @@
 #     "scipy==1.17.1",
 #     "seaborn==0.13.2",
 #     "plotly==6.7.0",
+#     "openpyxl==3.1.5",
 # ]
 # ///
 
@@ -26,10 +27,13 @@ def _():
     import matplotlib.pyplot as plt
     import seaborn as sns
     from scipy import stats
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    import plotly.express as px
     import os
 
     mo.md("# MAANG Stock vs Internet Usage Correlation Analysis")
-    return mo, pd, np, plt, sns, stats, os
+    return mo, pd, np, plt, sns, stats, go, make_subplots, px, os
 
 
 @app.cell
@@ -72,264 +76,412 @@ def _(analysis_df, companies_list, mo):
 
 
 @app.cell
-def _(analysis_df, companies_list, plt):
-    _fig1, _axes1 = plt.subplots(5, 1, figsize=(14, 20))
-    _fig1.suptitle("Time Series: Stock Price vs Internet Usage", fontsize=16)
+def _():
+    import marimo as mo
+    mo.md("""
+    ---
     
-    for _idx1, _comp1 in enumerate(companies_list):
-        _ax1 = _axes1[_idx1]
-        _ax2_1 = _ax1.twinx()
-        
-        _line1_1 = _ax1.plot(analysis_df.index, analysis_df[f"{_comp1}_Price"], 
-                       color="#1f77b4", label="Price", linewidth=2)
-        _line2_1 = _ax2_1.plot(analysis_df.index, analysis_df[f"{_comp1}_InternetUsage"], 
-                        color="#d62728", label="Internet Usage", linewidth=2, linestyle="--")
-        
-        _ax1.set_xlabel("Date")
-        _ax1.set_ylabel("Stock Price ($)", color="#1f77b4")
-        _ax2_1.set_ylabel("Internet Usage (Relative)", color="#d62728")
-        _ax1.set_title(f"{_comp1}")
-        _ax1.tick_params(axis="x", rotation=45)
-        
-        _lines1 = _line1_1 + _line2_1
-        _labels1 = [l.get_label() for l in _lines1]
-        _ax1.legend(_lines1, _labels1, loc="upper left")
-        _ax1.grid(True, alpha=0.3)
+    ## Correlation Analysis
     
-    plt.tight_layout()
-    plt.show()
-    return
-
-
-@app.cell
-def _(analysis_df, companies_list, plt):
-    _fig2, _axes2 = plt.subplots(5, 1, figsize=(14, 20))
-    _fig2.suptitle("Time Series: Trading Volume vs Internet Usage", fontsize=16)
+    This section calculates both Pearson and Spearman correlation coefficients between internet usage and stock metrics (price, volume, volatility) for each company.
     
-    for _idx2, _comp2 in enumerate(companies_list):
-        _ax2 = _axes2[_idx2]
-        _ax2_2 = _ax2.twinx()
-        
-        _line1_2 = _ax2.plot(analysis_df.index, analysis_df[f"{_comp2}_Volume"], 
-                       color="#2ca02c", label="Volume", linewidth=2)
-        _line2_2 = _ax2_2.plot(analysis_df.index, analysis_df[f"{_comp2}_InternetUsage"], 
-                        color="#d62728", label="Internet Usage", linewidth=2, linestyle="--")
-        
-        _ax2.set_xlabel("Date")
-        _ax2.set_ylabel("Trading Volume", color="#2ca02c")
-        _ax2_2.set_ylabel("Internet Usage (Relative)", color="#d62728")
-        _ax2.set_title(f"{_comp2}")
-        _ax2.tick_params(axis="x", rotation=45)
-        
-        _lines2 = _line1_2 + _line2_2
-        _labels2 = [l.get_label() for l in _lines2]
-        _ax2.legend(_lines2, _labels2, loc="upper left")
-        _ax2.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    plt.show()
-    return
-
-
-@app.cell
-def _(analysis_df, companies_list, plt):
-    _fig3, _axes3 = plt.subplots(5, 1, figsize=(14, 20))
-    _fig3.suptitle("Time Series: Volatility (30-day) vs Internet Usage", fontsize=16)
-    
-    for _idx3, _comp3 in enumerate(companies_list):
-        _ax3 = _axes3[_idx3]
-        _ax2_3 = _ax3.twinx()
-        
-        _line1_3 = _ax3.plot(analysis_df.index, analysis_df[f"{_comp3}_Volatility"], 
-                       color="#ff7f0e", label="Volatility", linewidth=2)
-        _line2_3 = _ax2_3.plot(analysis_df.index, analysis_df[f"{_comp3}_InternetUsage"], 
-                        color="#d62728", label="Internet Usage", linewidth=2, linestyle="--")
-        
-        _ax3.set_xlabel("Date")
-        _ax3.set_ylabel("Volatility (30-day std)", color="#ff7f0e")
-        _ax2_3.set_ylabel("Internet Usage (Relative)", color="#d62728")
-        _ax3.set_title(f"{_comp3}")
-        _ax3.tick_params(axis="x", rotation=45)
-        
-        _lines3 = _line1_3 + _line2_3
-        _labels3 = [l.get_label() for l in _lines3]
-        _ax3.legend(_lines3, _labels3, loc="upper left")
-        _ax3.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    plt.show()
-    return
-
-
-@app.cell
-def _(analysis_df, companies_list, plt):
-    _fig4, _axes4 = plt.subplots(1, 3, figsize=(18, 6))
-    _fig4.suptitle("Correlation Heatmaps by Metric", fontsize=16)
-    
-    for _idx4, _metric1 in enumerate(["Price", "Volume", "Volatility"]):
-        _ax4 = _axes4[_idx4]
-        
-        _cols_corr = [f"{c}_{_metric1}" for c in companies_list] + [f"{c}_InternetUsage" for c in companies_list]
-        _corr_matrix = analysis_df[_cols_corr].corr()
-        
-        _im = _ax4.imshow(_corr_matrix, cmap="coolwarm", aspect="auto", vmin=-1, vmax=1)
-        plt.colorbar(_im, ax=_ax4, label="Correlation")
-        
-        _ax4.set_xticks(range(len(_cols_corr)))
-        _ax4.set_yticks(range(len(_cols_corr)))
-        _short_labels = [c.replace("_InternetUsage", "").replace("_Price", "").replace("_Volume", "").replace("_Volatility", "") for c in _cols_corr]
-        _ax4.set_xticklabels(_short_labels, rotation=45, ha="right", fontsize=8)
-        _ax4.set_yticklabels(_short_labels, fontsize=8)
-        _ax4.set_title(f"{_metric1} vs Internet Usage")
-        
-        for _i in range(len(_cols_corr)):
-            for _j in range(len(_cols_corr)):
-                _val = _corr_matrix.iloc[_i, _j]
-                if abs(_val) > 0.1:
-                    _ax4.text(_j, _i, f"{_val:.2f}", ha="center", va="center", fontsize=6)
-    
-    plt.tight_layout()
-    plt.show()
-    return
-
-
-@app.cell
-def _(analysis_df, companies_list, plt, np):
-    _fig5, _axes5 = plt.subplots(5, 3, figsize=(15, 20))
-    _fig5.suptitle("Scatter Plots: Stock Metrics vs Internet Usage", fontsize=16)
-    
-    _metrics = [("Price", "#1f77b4"), ("Volume", "#2ca02c"), ("Volatility", "#ff7f0e")]
-    
-    for _row_idx1, _comp4 in enumerate(companies_list):
-        for _col_idx1, (_metric2, _color1) in enumerate(_metrics):
-            _ax5 = _axes5[_row_idx1, _col_idx1]
-            
-            _x1 = analysis_df[f"{_comp4}_InternetUsage"]
-            _y1 = analysis_df[f"{_comp4}_{_metric2}"]
-            
-            _ax5.scatter(_x1, _y1, alpha=0.5, s=30, color=_color1)
-            
-            if len(_x1) > 2:
-                _z1 = np.polyfit(_x1, _y1, 1)
-                _p1 = np.poly1d(_z1)
-                _ax5.plot(_x1, _p1(_x1), "r--", alpha=0.7, linewidth=2)
-                
-                _corr1 = np.corrcoef(_x1, _y1)[0, 1]
-                _ax5.set_title(f"{_comp4} {_metric2}\nr={_corr1:.3f}", fontsize=9)
-            else:
-                _ax5.set_title(f"{_comp4} {_metric2}", fontsize=9)
-            
-            _ax5.set_xlabel("Internet Usage")
-            _ax5.set_ylabel(_metric2)
-            _ax5.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    plt.show()
-    return
+    - **Pearson correlation**: Measures linear relationships between variables
+    - **Spearman correlation**: Measures monotonic (rank-based) relationships, more robust to outliers
+    - **p-value**: Tests statistical significance (p < 0.05 indicates significant correlation)
+    """)
+    return mo
 
 
 @app.cell
 def _(analysis_df, companies_list, stats, pd):
-    _results_list = []
+    correlation_results = []
     
-    for _comp5 in companies_list:
-        for _metric3 in ["Price", "Volume", "Volatility"]:
-            _metric_col = f"{_comp5}_{_metric3}"
-            _internet_col = f"{_comp5}_InternetUsage"
+    for comp in companies_list:
+        for metric in ["Price", "Volume", "Volatility"]:
+            metric_col = f"{comp}_{metric}"
+            internet_col = f"{comp}_InternetUsage"
             
-            _pearson_r, _pearson_p = stats.pearsonr(analysis_df[_metric_col], analysis_df[_internet_col])
-            _spearman_r, _spearman_p = stats.spearmanr(analysis_df[_metric_col], analysis_df[_internet_col])
+            pearson_r, pearson_p = stats.pearsonr(analysis_df[metric_col], analysis_df[internet_col])
+            spearman_r, spearman_p = stats.spearmanr(analysis_df[metric_col], analysis_df[internet_col])
             
-            _results_list.append({
-                "Company": _comp5,
-                "Metric": _metric3,
-                "Pearson_r": _pearson_r,
-                "Pearson_p": _pearson_p,
-                "Spearman_r": _spearman_r,
-                "Spearman_p": _spearman_p,
-                "Significant_Pearson": _pearson_p < 0.05,
-                "Significant_Spearman": _spearman_p < 0.05
+            correlation_results.append({
+                "Company": comp,
+                "Metric": metric,
+                "Pearson_r": pearson_r,
+                "Pearson_p": pearson_p,
+                "Spearman_r": spearman_r,
+                "Spearman_p": spearman_p,
+                "Significant_Pearson": pearson_p < 0.05,
+                "Significant_Spearman": spearman_p < 0.05
             })
     
-    _results_df = pd.DataFrame(_results_list)
+    results_df = pd.DataFrame(correlation_results)
     
-    return _results_df
+    return results_df
 
 
 @app.cell
-def _(_results_df, mo):
+def _(results_df, mo):
     mo.md("## Correlation Analysis Results")
     
-    _display_df = _results_df.copy()
-    _display_df["Pearson_r"] = _display_df["Pearson_r"].round(4)
-    _display_df["Pearson_p"] = _display_df["Pearson_p"].round(4)
-    _display_df["Spearman_r"] = _display_df["Spearman_r"].round(4)
-    _display_df["Spearman_p"] = _display_df["Spearman_p"].round(4)
+    display_df = results_df.copy()
+    display_df["Pearson_r"] = display_df["Pearson_r"].round(4)
+    display_df["Pearson_p"] = display_df["Pearson_p"].round(4)
+    display_df["Spearman_r"] = display_df["Spearman_r"].round(4)
+    display_df["Spearman_p"] = display_df["Spearman_p"].round(4)
     
-    mo.md(_display_df[["Company", "Metric", "Pearson_r", "Pearson_p", "Spearman_r", "Spearman_p"]].to_markdown(index=False))
+    mo.md(display_df[["Company", "Metric", "Pearson_r", "Pearson_p", "Spearman_r", "Spearman_p"]].to_markdown(index=False))
     
-    _significant = _results_df[(_results_df["Significant_Pearson"]) | (_results_df["Significant_Spearman"])]
-    if len(_significant) > 0:
-        mo.md(f"**Statistically Significant Correlations (p < 0.05):** {len(_significant)} out of {len(_results_df)} tests")
+    significant = results_df[(results_df["Significant_Pearson"]) | (results_df["Significant_Spearman"])]
+    if len(significant) > 0:
+        mo.md(f"**Statistically Significant Correlations (p < 0.05):** {len(significant)} out of {len(results_df)} tests")
     else:
         mo.md("**No statistically significant correlations found (p < 0.05)**")
     
-    return _display_df, _significant
+    return display_df, significant
 
 
 @app.cell
-def _(analysis_df, companies_list, plt):
-    _window = 36
-    
-    _fig6, _axes6 = plt.subplots(5, 3, figsize=(18, 20))
-    _fig6.suptitle(f"Rolling Correlation ({_window}-month window)", fontsize=16)
-    
-    for _row_idx2, _comp6 in enumerate(companies_list):
-        for _col_idx2, _metric4 in enumerate(["Price", "Volume", "Volatility"]):
-            _ax6 = _axes6[_row_idx2, _col_idx2]
-            
-            _metric_col2 = f"{_comp6}_{_metric4}"
-            _internet_col2 = f"{_comp6}_InternetUsage"
-            
-            _rolling_corr = analysis_df[_metric_col2].rolling(window=_window).corr(analysis_df[_internet_col2])
-            
-            _ax6.plot(analysis_df.index, _rolling_corr, linewidth=2, color="#1f77b4")
-            _ax6.axhline(y=0, color="black", linestyle="--", linewidth=1, alpha=0.5)
-            _ax6.axhline(y=0.5, color="red", linestyle=":", linewidth=1, alpha=0.5)
-            _ax6.axhline(y=-0.5, color="red", linestyle=":", linewidth=1, alpha=0.5)
-            _ax6.set_xlabel("Date")
-            _ax6.set_ylabel("Correlation")
-            _ax6.set_title(f"{_comp6} {_metric4}", fontsize=10)
-            _ax6.grid(True, alpha=0.3)
-            _ax6.tick_params(axis="x", rotation=45)
-            _ax6.set_ylim(-1, 1)
-    
-    plt.tight_layout()
-    plt.show()
-    return _fig6, _axes6, _rolling_corr, _window
-
-
-@app.cell
-def _(_results_df, companies_list, mo):
-    mo.md("## Summary")
-    
-    _summary_list = []
-    for _comp7 in companies_list:
-        _comp_results = _results_df[_results_df["Company"] == _comp7]
-        _sig_count = len(_comp_results[(_comp_results["Significant_Pearson"]) | (_comp_results["Significant_Spearman"])])
-        _summary_list.append(f"- **{_comp7}**: {_sig_count}/3 metrics with significant correlations")
-    
-    mo.md("\n".join(_summary_list))
-    
+def _():
+    import marimo as mo
     mo.md("""
-### Key Findings:
-- Pearson correlation measures linear relationships
-- Spearman correlation measures monotonic (rank-based) relationships
-- Rolling correlations show how relationships evolve over time
-- Statistical significance (p < 0.05) indicates the correlation is unlikely to be due to random chance
+    ---
+    
+    ## Interactive Time Series Visualizations
+    
+    The following charts show the relationship between stock metrics and internet usage over time.
+    Use the interactive features to:
+    - **Hover** over data points to see exact values
+    - **Zoom** by selecting a region
+    - **Pan** by dragging the plot
+    - **Toggle** legend items to show/hide specific companies
+    """)
+    return mo
+
+
+@app.cell
+def _(analysis_df, companies_list, go):
+    fig_price = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    for comp in companies_list:
+        fig_price.add_trace(go.Scatter(
+            x=analysis_df.index,
+            y=analysis_df[f"{comp}_Price"],
+            name=f"{comp} Price",
+            line=dict(width=2),
+            legendgroup=comp,
+            showlegend=True
+        ), secondary=False)
+        
+        fig_price.add_trace(go.Scatter(
+            x=analysis_df.index,
+            y=analysis_df[f"{comp}_InternetUsage"],
+            name=f"{comp} Internet",
+            line=dict(dash="dash", width=2),
+            legendgroup=comp,
+            showlegend=False,
+            line_color='rgba(214,39,40,0.7)'
+        ), secondary=True)
+    
+    fig_price.update_layout(
+        title="Interactive: Stock Price vs Internet Usage",
+        hovermode="x unified",
+        height=600,
+        legend_title="Companies"
+    )
+    fig_price.update_xaxes(title_text="Date")
+    fig_price.update_yaxes(title_text="Stock Price ($)", secondary=False)
+    fig_price.update_yaxes(title_text="Internet Usage (Relative)", secondary=True)
+    
+    return fig_price
+
+
+@app.cell
+def _(analysis_df, companies_list, go):
+    fig_volume = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    for comp in companies_list:
+        fig_volume.add_trace(go.Scatter(
+            x=analysis_df.index,
+            y=analysis_df[f"{comp}_Volume"],
+            name=f"{comp} Volume",
+            line=dict(width=2, color='#2ca02c'),
+            legendgroup=comp,
+            showlegend=True
+        ), secondary=False)
+        
+        fig_volume.add_trace(go.Scatter(
+            x=analysis_df.index,
+            y=analysis_df[f"{comp}_InternetUsage"],
+            name=f"{comp} Internet",
+            line=dict(dash="dash", width=2, color='#d62728'),
+            legendgroup=comp,
+            showlegend=False
+        ), secondary=True)
+    
+    fig_volume.update_layout(
+        title="Interactive: Trading Volume vs Internet Usage",
+        hovermode="x unified",
+        height=600
+    )
+    fig_volume.update_xaxes(title_text="Date")
+    fig_volume.update_yaxes(title_text="Trading Volume", secondary=False)
+    fig_volume.update_yaxes(title_text="Internet Usage (Relative)", secondary=True)
+    
+    return fig_volume
+
+
+@app.cell
+def _(analysis_df, companies_list, go):
+    fig_volatility = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    for comp in companies_list:
+        fig_volatility.add_trace(go.Scatter(
+            x=analysis_df.index,
+            y=analysis_df[f"{comp}_Volatility"],
+            name=f"{comp} Volatility",
+            line=dict(width=2, color='#ff7f0e'),
+            legendgroup=comp,
+            showlegend=True
+        ), secondary=False)
+        
+        fig_volatility.add_trace(go.Scatter(
+            x=analysis_df.index,
+            y=analysis_df[f"{comp}_InternetUsage"],
+            name=f"{comp} Internet",
+            line=dict(dash="dash", width=2, color='#d62728'),
+            legendgroup=comp,
+            showlegend=False
+        ), secondary=True)
+    
+    fig_volatility.update_layout(
+        title="Interactive: Volatility (30-day) vs Internet Usage",
+        hovermode="x unified",
+        height=600
+    )
+    fig_volatility.update_xaxes(title_text="Date")
+    fig_volatility.update_yaxes(title_text="Volatility (30-day std)", secondary=False)
+    fig_volatility.update_yaxes(title_text="Internet Usage (Relative)", secondary=True)
+    
+    return fig_volatility
+
+
+@app.cell
+def _():
+    import marimo as mo
+    mo.md("""
+    ---
+    
+    ## Correlation Heatmaps
+    
+    Heatmaps showing correlation coefficients between all stock prices and internet usage metrics.
+    - Values range from -1 (perfect negative) to +1 (perfect positive)
+    - Darker colors indicate stronger correlations
+    """)
+    return mo
+
+
+@app.cell
+def _(analysis_df, companies_list, px):
+    metric_select = "Price"
+    cols_for_heatmap = [f"{c}_{metric_select}" for c in companies_list] + [f"{c}_InternetUsage" for c in companies_list]
+    corr_matrix_hm = analysis_df[cols_for_heatmap].corr()
+    
+    fig_heatmap = px.imshow(
+        corr_matrix_hm,
+        color_continuous_scale="RdBu_r",
+        zmin=-1,
+        zmax=1,
+        title=f"Correlation Heatmap: {metric_select} & Internet Usage",
+        aspect="auto"
+    )
+    fig_heatmap.update_layout(height=600, width=800)
+    fig_heatmap.update_xaxes(tickangle=45)
+    
+    return fig_heatmap
+
+
+@app.cell
+def _():
+    import marimo as mo
+    mo.md("""
+    ---
+    
+    ## Scatter Plots with Regression Lines
+    
+    Scatter plots showing the relationship between internet usage and each stock metric.
+    - Each point represents one month of data
+    - Red dashed line shows the linear regression fit
+    - Correlation coefficient (r) displayed in each subplot title
+    """)
+    return mo
+
+
+@app.cell
+def _(analysis_df, companies_list, go):
+    fig_scatter = make_subplots(rows=5, cols=3, subplot_titles=[
+        f"{c} {m}" for c in companies_list for m in ["Price", "Volume", "Volatility"]
+    ])
+    
+    colors = {"Price": "#1f77b4", "Volume": "#2ca02c", "Volatility": "#ff7f0e"}
+    
+    for row_idx, comp in enumerate(companies_list):
+        for col_idx, (metric, color) in enumerate(zip(["Price", "Volume", "Volatility"], [colors["Price"], colors["Volume"], colors["Volatility"]])):
+            x = analysis_df[f"{comp}_InternetUsage"]
+            y = analysis_df[f"{comp}_{metric}"]
+            corr = np.corrcoef(x, y)[0, 1]
+            
+            fig_scatter.add_trace(go.Scatter(
+                x=x,
+                y=y,
+                mode="markers",
+                marker=dict(color=color, opacity=0.5, size=8),
+                name=f"{comp} {metric}",
+                showlegend=False,
+                hovertemplate=f"Internet: %{{x}}<br>{metric}: %{{y}}<extra></extra>"
+            ), row=row_idx+1, col=col_idx+1)
+            
+            z = np.polyfit(x, y, 1)
+            p = np.poly1d(z)
+            x_line = np.linspace(x.min(), x.max(), 100)
+            fig_scatter.add_trace(go.Scatter(
+                x=x_line,
+                y=p(x_line),
+                mode="lines",
+                line=dict(color="red", dash="dash"),
+                showlegend=False,
+                hoverinfo="skip"
+            ), row=row_idx+1, col=col_idx+1)
+            
+            fig_scatter.update_xaxes(title_text="Internet Usage", row=row_idx+1, col=col_idx+1)
+            fig_scatter.update_yaxes(title_text=metric, row=row_idx+1, col=col_idx+1)
+    
+    fig_scatter.update_layout(
+        title="Scatter Plots: Stock Metrics vs Internet Usage",
+        height=1200,
+        width=1200
+    )
+    
+    return fig_scatter
+
+
+@app.cell
+def _():
+    import marimo as mo
+    mo.md("""
+    ---
+    
+    ## Rolling Correlation Analysis
+    
+    Shows how the correlation between internet usage and stock metrics changes over time.
+    - Uses a 36-month rolling window
+    - Helps identify if relationships strengthen or weaken over different time periods
+    - Red dotted lines at ±0.5 indicate moderate correlation thresholds
+    """)
+    return mo
+
+
+@app.cell
+def _(analysis_df, companies_list, go):
+    window = 36
+    
+    fig_rolling = make_subplots(rows=5, cols=3, subplot_titles=[
+        f"{c} {m}" for c in companies_list for m in ["Price", "Volume", "Volatility"]
+    ])
+    
+    for row_idx, comp in enumerate(companies_list):
+        for col_idx, metric in enumerate(["Price", "Volume", "Volatility"]):
+            metric_col = f"{comp}_{metric}"
+            internet_col = f"{comp}_InternetUsage"
+            
+            rolling_corr = analysis_df[metric_col].rolling(window=window).corr(analysis_df[internet_col])
+            
+            fig_rolling.add_trace(go.Scatter(
+                x=analysis_df.index,
+                y=rolling_corr,
+                mode="lines",
+                line=dict(width=2),
+                name=f"{comp} {metric}",
+                showlegend=False,
+                hovertemplate=f"Date: %{{x}}<br>Correlation: %{{y:.3f}}<extra></extra>"
+            ), row=row_idx+1, col=col_idx+1)
+            
+            fig_rolling.add_hline(y=0, line_dash="dash", line_color="black", opacity=0.5, row=row_idx+1, col=col_idx+1)
+            fig_rolling.add_hline(y=0.5, line_dash="dot", line_color="red", opacity=0.5, row=row_idx+1, col=col_idx+1)
+            fig_rolling.add_hline(y=-0.5, line_dash="dot", line_color="red", opacity=0.5, row=row_idx+1, col=col_idx+1)
+            
+            fig_rolling.update_xaxes(title_text="Date", row=row_idx+1, col=col_idx+1)
+            fig_rolling.update_yaxes(title_text="Correlation", range=[-1, 1], row=row_idx+1, col=col_idx+1)
+    
+    fig_rolling.update_layout(
+        title=f"Rolling Correlation ({window}-month window)",
+        height=1200,
+        width=1200
+    )
+    
+    return fig_rolling, rolling_corr, window
+
+
+@app.cell
+def _():
+    import marimo as mo
+    mo.md("""
+    ---
+    
+    ## Export Results
+    
+    This section exports all analysis results to files for further use or reporting.
+    Files are saved to the `data/exports/` directory.
+    """)
+    return mo
+
+
+@app.cell
+def _(analysis_df, companies_list, results_df, os, pd):
+    mo.md("## Export Results")
+    
+    export_dir = "data/exports"
+    os.makedirs(export_dir, exist_ok=True)
+    
+    corr_export = results_df.copy()
+    corr_export["Pearson_r"] = corr_export["Pearson_r"].round(6)
+    corr_export["Pearson_p"] = corr_export["Pearson_p"].round(6)
+    corr_export["Spearman_r"] = corr_export["Spearman_r"].round(6)
+    corr_export["Spearman_p"] = corr_export["Spearman_p"].round(6)
+    
+    csv_path = os.path.join(export_dir, "correlation_results.csv")
+    corr_export.to_csv(csv_path, index=False)
+    
+    excel_path = os.path.join(export_dir, "correlation_results.xlsx")
+    with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
+        corr_export.to_excel(writer, sheet_name="Correlations", index=False)
+        analysis_df.to_excel(writer, sheet_name="Analysis_Data", index=True)
+    
+    summary_path = os.path.join(export_dir, "summary_statistics.csv")
+    summary_stats = []
+    for comp in companies_list:
+        for metric in ["Price", "Volume", "Volatility"]:
+            col = f"{comp}_{metric}"
+            summary_stats.append({
+                "Company": comp,
+                "Metric": metric,
+                "Mean": analysis_df[col].mean(),
+                "Std": analysis_df[col].std(),
+                "Min": analysis_df[col].min(),
+                "Max": analysis_df[col].max(),
+                "Median": analysis_df[col].median()
+            })
+    summary_df = pd.DataFrame(summary_stats)
+    summary_df.to_csv(summary_path, index=False)
+    
+    mo.md(f"""
+**Exported Files:**
+- `{csv_path}` - Correlation results (CSV)
+- `{excel_path}` - Full results with analysis data (Excel)
+- `{summary_path}` - Summary statistics (CSV)
     """)
     
-    return
+    return export_dir
 
 
 @app.cell

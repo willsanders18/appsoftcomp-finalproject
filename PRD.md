@@ -77,3 +77,50 @@ A Jupyter notebook that performs correlation analysis between MAANG company stoc
 - All companies show statistically significant correlations (p < 0.05) for most metrics
 
 ---
+
+## Task 6: Interactive Visualizations (Plotly)
+- **Goal:** Replace static matplotlib charts with interactive Plotly visualizations
+- **Inputs:** Analysis DataFrame and correlation results from Tasks 3-4
+- **Outputs:** Interactive charts with zoom, hover tooltips, and toggleable legends
+- **Specification 1:** Time series plots with dual y-axes and synchronized hover
+- **Specification 2:** Interactive heatmap with correlation values on hover
+- **Specification 3:** Scatter plots with regression lines and hover details
+- **Specification 4:** Rolling correlation plots with threshold lines
+
+---
+
+## Task 7: Export Functionality
+- **Goal:** Export analysis results to CSV and Excel formats
+- **Inputs:** Correlation results DataFrame and analysis DataFrame
+- **Outputs:** Export files in `data/exports/` folder
+- **Specification 1:** Export correlation results to CSV (`correlation_results.csv`)
+- **Specification 2:** Export full results with analysis data to Excel (multiple sheets)
+- **Specification 3:** Export summary statistics (mean, std, min, max, median) to CSV
+
+---
+
+## Completed Features Summary
+
+**Data Pipeline:**
+- [x] Data cleaning script (`clean_data.py`)
+- [x] Automated data alignment and aggregation
+- [x] Cleaned data saved to `data/cleaned/`
+
+**Analysis:**
+- [x] Pearson and Spearman correlation calculations
+- [x] 30-day rolling volatility calculation
+- [x] Monthly aggregation of daily stock data
+
+**Visualizations:**
+- [x] Time series plots (price, volume, volatility vs internet usage)
+- [x] Correlation heatmaps
+- [x] Scatter plots with regression lines
+- [x] Rolling correlation plots (36-month window)
+- [x] Interactive Plotly charts with hover tooltips
+
+**Exports:**
+- [x] `data/exports/correlation_results.csv`
+- [x] `data/exports/correlation_results.xlsx`
+- [x] `data/exports/summary_statistics.csv`
+
+---

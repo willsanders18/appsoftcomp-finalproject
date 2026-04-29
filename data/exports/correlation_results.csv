@@ -1,0 +1,16 @@
+Company,Metric,Pearson_r,Pearson_p,Spearman_r,Spearman_p
+Apple,Price,0.361693,0.0,0.696797,0.0
+Apple,Volume,-0.45921,0.0,-0.576844,0.0
+Apple,Volatility,-0.185906,0.00546,-0.265435,6.2e-05
+Amazon,Price,0.782814,0.0,0.931187,0.0
+Amazon,Volume,-0.633163,0.0,-0.630682,0.0
+Amazon,Volatility,-0.311866,2e-06,-0.275895,3.1e-05
+Google,Price,0.126088,0.060716,0.464501,0.0
+Google,Volume,-0.682538,0.0,-0.523131,0.0
+Google,Volatility,-0.341851,0.0,-0.344568,0.0
+Microsoft,Price,-0.47161,0.0,-0.773194,0.0
+Microsoft,Volume,0.762908,0.0,0.837691,0.0
+Microsoft,Volatility,-0.02565,0.703887,-0.037331,0.580079
+Netflix,Price,0.880075,0.0,0.965663,0.0
+Netflix,Volume,-0.271958,4e-05,-0.332605,0.0
+Netflix,Volatility,-0.19789,0.003065,-0.265814,6.1e-05
