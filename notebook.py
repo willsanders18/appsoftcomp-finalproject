@@ -55,13 +55,13 @@ def _(pd):
     }
     
     analysis_df = pd.DataFrame(index=pivot_price.index)
-    for comp in companies_list:
-        analysis_df[f"{comp}_Price"] = pivot_price[comp]
-        analysis_df[f"{comp}_Volume"] = pivot_volume[comp]
-        analysis_df[f"{comp}_Volatility"] = pivot_volatility[comp]
-        analysis_df[f"{comp}_InternetUsage"] = combined_df.pivot_table(
-            index="YearMonth", columns="Company", values=trend_cols[comp]
-        )[comp]
+    for _comp in companies_list:
+        analysis_df[f"{_comp}_Price"] = pivot_price[_comp]
+        analysis_df[f"{_comp}_Volume"] = pivot_volume[_comp]
+        analysis_df[f"{_comp}_Volatility"] = pivot_volatility[_comp]
+        analysis_df[f"{_comp}_InternetUsage"] = combined_df.pivot_table(
+            index="YearMonth", columns="Company", values=trend_cols[_comp]
+        )[_comp]
     
     analysis_df = analysis_df.dropna()
     
@@ -76,8 +76,7 @@ def _(analysis_df, companies_list, mo):
 
 
 @app.cell
-def _():
-    import marimo as mo
+def _(mo):
     mo.md("""
     ---
     
@@ -96,17 +95,17 @@ def _():
 def _(analysis_df, companies_list, stats, pd):
     correlation_results = []
     
-    for comp in companies_list:
-        for metric in ["Price", "Volume", "Volatility"]:
-            metric_col = f"{comp}_{metric}"
-            internet_col = f"{comp}_InternetUsage"
+    for _comp in companies_list:
+        for _metric in ["Price", "Volume", "Volatility"]:
+            _metric_col = f"{_comp}_{_metric}"
+            _internet_col = f"{_comp}_InternetUsage"
             
-            pearson_r, pearson_p = stats.pearsonr(analysis_df[metric_col], analysis_df[internet_col])
-            spearman_r, spearman_p = stats.spearmanr(analysis_df[metric_col], analysis_df[internet_col])
+            pearson_r, pearson_p = stats.pearsonr(analysis_df[_metric_col], analysis_df[_internet_col])
+            spearman_r, spearman_p = stats.spearmanr(analysis_df[_metric_col], analysis_df[_internet_col])
             
             correlation_results.append({
-                "Company": comp,
-                "Metric": metric,
+                "Company": _comp,
+                "Metric": _metric,
                 "Pearson_r": pearson_r,
                 "Pearson_p": pearson_p,
                 "Spearman_r": spearman_r,
@@ -122,28 +121,29 @@ def _(analysis_df, companies_list, stats, pd):
 
 @app.cell
 def _(results_df, mo):
-    mo.md("## Correlation Analysis Results")
-    
     display_df = results_df.copy()
     display_df["Pearson_r"] = display_df["Pearson_r"].round(4)
     display_df["Pearson_p"] = display_df["Pearson_p"].round(4)
     display_df["Spearman_r"] = display_df["Spearman_r"].round(4)
     display_df["Spearman_p"] = display_df["Spearman_p"].round(4)
     
-    mo.md(display_df[["Company", "Metric", "Pearson_r", "Pearson_p", "Spearman_r", "Spearman_p"]].to_markdown(index=False))
-    
     significant = results_df[(results_df["Significant_Pearson"]) | (results_df["Significant_Spearman"])]
-    if len(significant) > 0:
-        mo.md(f"**Statistically Significant Correlations (p < 0.05):** {len(significant)} out of {len(results_df)} tests")
-    else:
-        mo.md("**No statistically significant correlations found (p < 0.05)**")
+    significance_message = (
+        f"**Statistically Significant Correlations (p < 0.05):** {len(significant)} out of {len(results_df)} tests"
+        if len(significant) > 0
+        else "**No statistically significant correlations found (p < 0.05)**"
+    )
+    mo.vstack([
+        mo.md("## Correlation Analysis Results"),
+        mo.ui.table(display_df[["Company", "Metric", "Pearson_r", "Pearson_p", "Spearman_r", "Spearman_p"]]),
+        mo.md(significance_message),
+    ])
     
     return display_df, significant
 
 
 @app.cell
-def _():
-    import marimo as mo
+def _(mo):
     mo.md("""
     ---
     
@@ -160,28 +160,28 @@ def _():
 
 
 @app.cell
-def _(analysis_df, companies_list, go):
+def _(analysis_df, companies_list, go, make_subplots):
     fig_price = make_subplots(specs=[[{"secondary_y": True}]])
     
-    for comp in companies_list:
+    for _comp in companies_list:
         fig_price.add_trace(go.Scatter(
             x=analysis_df.index,
-            y=analysis_df[f"{comp}_Price"],
-            name=f"{comp} Price",
+            y=analysis_df[f"{_comp}_Price"],
+            name=f"{_comp} Price",
             line=dict(width=2),
-            legendgroup=comp,
+            legendgroup=_comp,
             showlegend=True
-        ), secondary=False)
+        ), secondary_y=False)
         
         fig_price.add_trace(go.Scatter(
             x=analysis_df.index,
-            y=analysis_df[f"{comp}_InternetUsage"],
-            name=f"{comp} Internet",
+            y=analysis_df[f"{_comp}_InternetUsage"],
+            name=f"{_comp} Internet",
             line=dict(dash="dash", width=2),
-            legendgroup=comp,
+            legendgroup=_comp,
             showlegend=False,
             line_color='rgba(214,39,40,0.7)'
-        ), secondary=True)
+        ), secondary_y=True)
     
     fig_price.update_layout(
         title="Interactive: Stock Price vs Internet Usage",
@@ -190,34 +190,34 @@ def _(analysis_df, companies_list, go):
         legend_title="Companies"
     )
     fig_price.update_xaxes(title_text="Date")
-    fig_price.update_yaxes(title_text="Stock Price ($)", secondary=False)
-    fig_price.update_yaxes(title_text="Internet Usage (Relative)", secondary=True)
+    fig_price.update_yaxes(title_text="Stock Price ($)", secondary_y=False)
+    fig_price.update_yaxes(title_text="Internet Usage (Relative)", secondary_y=True)
     
     return fig_price
 
 
 @app.cell
-def _(analysis_df, companies_list, go):
+def _(analysis_df, companies_list, go, make_subplots):
     fig_volume = make_subplots(specs=[[{"secondary_y": True}]])
     
-    for comp in companies_list:
+    for _comp in companies_list:
         fig_volume.add_trace(go.Scatter(
             x=analysis_df.index,
-            y=analysis_df[f"{comp}_Volume"],
-            name=f"{comp} Volume",
+            y=analysis_df[f"{_comp}_Volume"],
+            name=f"{_comp} Volume",
             line=dict(width=2, color='#2ca02c'),
-            legendgroup=comp,
+            legendgroup=_comp,
             showlegend=True
-        ), secondary=False)
+        ), secondary_y=False)
         
         fig_volume.add_trace(go.Scatter(
             x=analysis_df.index,
-            y=analysis_df[f"{comp}_InternetUsage"],
-            name=f"{comp} Internet",
+            y=analysis_df[f"{_comp}_InternetUsage"],
+            name=f"{_comp} Internet",
             line=dict(dash="dash", width=2, color='#d62728'),
-            legendgroup=comp,
+            legendgroup=_comp,
             showlegend=False
-        ), secondary=True)
+        ), secondary_y=True)
     
     fig_volume.update_layout(
         title="Interactive: Trading Volume vs Internet Usage",
@@ -225,34 +225,34 @@ def _(analysis_df, companies_list, go):
         height=600
     )
     fig_volume.update_xaxes(title_text="Date")
-    fig_volume.update_yaxes(title_text="Trading Volume", secondary=False)
-    fig_volume.update_yaxes(title_text="Internet Usage (Relative)", secondary=True)
+    fig_volume.update_yaxes(title_text="Trading Volume", secondary_y=False)
+    fig_volume.update_yaxes(title_text="Internet Usage (Relative)", secondary_y=True)
     
     return fig_volume
 
 
 @app.cell
-def _(analysis_df, companies_list, go):
+def _(analysis_df, companies_list, go, make_subplots):
     fig_volatility = make_subplots(specs=[[{"secondary_y": True}]])
     
-    for comp in companies_list:
+    for _comp in companies_list:
         fig_volatility.add_trace(go.Scatter(
             x=analysis_df.index,
-            y=analysis_df[f"{comp}_Volatility"],
-            name=f"{comp} Volatility",
+            y=analysis_df[f"{_comp}_Volatility"],
+            name=f"{_comp} Volatility",
             line=dict(width=2, color='#ff7f0e'),
-            legendgroup=comp,
+            legendgroup=_comp,
             showlegend=True
-        ), secondary=False)
+        ), secondary_y=False)
         
         fig_volatility.add_trace(go.Scatter(
             x=analysis_df.index,
-            y=analysis_df[f"{comp}_InternetUsage"],
-            name=f"{comp} Internet",
+            y=analysis_df[f"{_comp}_InternetUsage"],
+            name=f"{_comp} Internet",
             line=dict(dash="dash", width=2, color='#d62728'),
-            legendgroup=comp,
+            legendgroup=_comp,
             showlegend=False
-        ), secondary=True)
+        ), secondary_y=True)
     
     fig_volatility.update_layout(
         title="Interactive: Volatility (30-day) vs Internet Usage",
@@ -260,15 +260,14 @@ def _(analysis_df, companies_list, go):
         height=600
     )
     fig_volatility.update_xaxes(title_text="Date")
-    fig_volatility.update_yaxes(title_text="Volatility (30-day std)", secondary=False)
-    fig_volatility.update_yaxes(title_text="Internet Usage (Relative)", secondary=True)
+    fig_volatility.update_yaxes(title_text="Volatility (30-day std)", secondary_y=False)
+    fig_volatility.update_yaxes(title_text="Internet Usage (Relative)", secondary_y=True)
     
     return fig_volatility
 
 
 @app.cell
-def _():
-    import marimo as mo
+def _(mo):
     mo.md("""
     ---
     
@@ -302,8 +301,7 @@ def _(analysis_df, companies_list, px):
 
 
 @app.cell
-def _():
-    import marimo as mo
+def _(mo):
     mo.md("""
     ---
     
@@ -318,28 +316,28 @@ def _():
 
 
 @app.cell
-def _(analysis_df, companies_list, go):
+def _(analysis_df, companies_list, go, make_subplots, np):
     fig_scatter = make_subplots(rows=5, cols=3, subplot_titles=[
-        f"{c} {m}" for c in companies_list for m in ["Price", "Volume", "Volatility"]
+        f"{_c} {_m}" for _c in companies_list for _m in ["Price", "Volume", "Volatility"]
     ])
     
     colors = {"Price": "#1f77b4", "Volume": "#2ca02c", "Volatility": "#ff7f0e"}
     
-    for row_idx, comp in enumerate(companies_list):
-        for col_idx, (metric, color) in enumerate(zip(["Price", "Volume", "Volatility"], [colors["Price"], colors["Volume"], colors["Volatility"]])):
-            x = analysis_df[f"{comp}_InternetUsage"]
-            y = analysis_df[f"{comp}_{metric}"]
+    for _row_idx, _comp in enumerate(companies_list):
+        for _col_idx, (_metric, _color) in enumerate(zip(["Price", "Volume", "Volatility"], [colors["Price"], colors["Volume"], colors["Volatility"]])):
+            x = analysis_df[f"{_comp}_InternetUsage"]
+            y = analysis_df[f"{_comp}_{_metric}"]
             corr = np.corrcoef(x, y)[0, 1]
             
             fig_scatter.add_trace(go.Scatter(
                 x=x,
                 y=y,
                 mode="markers",
-                marker=dict(color=color, opacity=0.5, size=8),
-                name=f"{comp} {metric}",
+                marker=dict(color=_color, opacity=0.5, size=8),
+                name=f"{_comp} {_metric}",
                 showlegend=False,
-                hovertemplate=f"Internet: %{{x}}<br>{metric}: %{{y}}<extra></extra>"
-            ), row=row_idx+1, col=col_idx+1)
+                hovertemplate=f"Internet: %{{x}}<br>{_metric}: %{{y}}<extra></extra>"
+            ), row=_row_idx+1, col=_col_idx+1)
             
             z = np.polyfit(x, y, 1)
             p = np.poly1d(z)
@@ -351,10 +349,10 @@ def _(analysis_df, companies_list, go):
                 line=dict(color="red", dash="dash"),
                 showlegend=False,
                 hoverinfo="skip"
-            ), row=row_idx+1, col=col_idx+1)
+            ), row=_row_idx+1, col=_col_idx+1)
             
-            fig_scatter.update_xaxes(title_text="Internet Usage", row=row_idx+1, col=col_idx+1)
-            fig_scatter.update_yaxes(title_text=metric, row=row_idx+1, col=col_idx+1)
+            fig_scatter.update_xaxes(title_text="Internet Usage", row=_row_idx+1, col=_col_idx+1)
+            fig_scatter.update_yaxes(title_text=_metric, row=_row_idx+1, col=_col_idx+1)
     
     fig_scatter.update_layout(
         title="Scatter Plots: Stock Metrics vs Internet Usage",
@@ -366,8 +364,7 @@ def _(analysis_df, companies_list, go):
 
 
 @app.cell
-def _():
-    import marimo as mo
+def _(mo):
     mo.md("""
     ---
     
@@ -382,36 +379,36 @@ def _():
 
 
 @app.cell
-def _(analysis_df, companies_list, go):
+def _(analysis_df, companies_list, go, make_subplots):
     window = 36
     
     fig_rolling = make_subplots(rows=5, cols=3, subplot_titles=[
-        f"{c} {m}" for c in companies_list for m in ["Price", "Volume", "Volatility"]
+        f"{_c} {_m}" for _c in companies_list for _m in ["Price", "Volume", "Volatility"]
     ])
     
-    for row_idx, comp in enumerate(companies_list):
-        for col_idx, metric in enumerate(["Price", "Volume", "Volatility"]):
-            metric_col = f"{comp}_{metric}"
-            internet_col = f"{comp}_InternetUsage"
+    for _row_idx, _comp in enumerate(companies_list):
+        for _col_idx, _metric in enumerate(["Price", "Volume", "Volatility"]):
+            _metric_col = f"{_comp}_{_metric}"
+            _internet_col = f"{_comp}_InternetUsage"
             
-            rolling_corr = analysis_df[metric_col].rolling(window=window).corr(analysis_df[internet_col])
+            rolling_corr = analysis_df[_metric_col].rolling(window=window).corr(analysis_df[_internet_col])
             
             fig_rolling.add_trace(go.Scatter(
                 x=analysis_df.index,
                 y=rolling_corr,
                 mode="lines",
                 line=dict(width=2),
-                name=f"{comp} {metric}",
+                name=f"{_comp} {_metric}",
                 showlegend=False,
                 hovertemplate=f"Date: %{{x}}<br>Correlation: %{{y:.3f}}<extra></extra>"
-            ), row=row_idx+1, col=col_idx+1)
+            ), row=_row_idx+1, col=_col_idx+1)
             
-            fig_rolling.add_hline(y=0, line_dash="dash", line_color="black", opacity=0.5, row=row_idx+1, col=col_idx+1)
-            fig_rolling.add_hline(y=0.5, line_dash="dot", line_color="red", opacity=0.5, row=row_idx+1, col=col_idx+1)
-            fig_rolling.add_hline(y=-0.5, line_dash="dot", line_color="red", opacity=0.5, row=row_idx+1, col=col_idx+1)
+            fig_rolling.add_hline(y=0, line_dash="dash", line_color="black", opacity=0.5, row=_row_idx+1, col=_col_idx+1)
+            fig_rolling.add_hline(y=0.5, line_dash="dot", line_color="red", opacity=0.5, row=_row_idx+1, col=_col_idx+1)
+            fig_rolling.add_hline(y=-0.5, line_dash="dot", line_color="red", opacity=0.5, row=_row_idx+1, col=_col_idx+1)
             
-            fig_rolling.update_xaxes(title_text="Date", row=row_idx+1, col=col_idx+1)
-            fig_rolling.update_yaxes(title_text="Correlation", range=[-1, 1], row=row_idx+1, col=col_idx+1)
+            fig_rolling.update_xaxes(title_text="Date", row=_row_idx+1, col=_col_idx+1)
+            fig_rolling.update_yaxes(title_text="Correlation", range=[-1, 1], row=_row_idx+1, col=_col_idx+1)
     
     fig_rolling.update_layout(
         title=f"Rolling Correlation ({window}-month window)",
@@ -423,8 +420,7 @@ def _(analysis_df, companies_list, go):
 
 
 @app.cell
-def _():
-    import marimo as mo
+def _(mo):
     mo.md("""
     ---
     
@@ -437,7 +433,7 @@ def _():
 
 
 @app.cell
-def _(analysis_df, companies_list, results_df, os, pd):
+def _(analysis_df, companies_list, mo, os, pd, results_df):
     mo.md("## Export Results")
     
     export_dir = "data/exports"
@@ -459,17 +455,17 @@ def _(analysis_df, companies_list, results_df, os, pd):
     
     summary_path = os.path.join(export_dir, "summary_statistics.csv")
     summary_stats = []
-    for comp in companies_list:
-        for metric in ["Price", "Volume", "Volatility"]:
-            col = f"{comp}_{metric}"
+    for _comp in companies_list:
+        for _metric in ["Price", "Volume", "Volatility"]:
+            _col = f"{_comp}_{_metric}"
             summary_stats.append({
-                "Company": comp,
-                "Metric": metric,
-                "Mean": analysis_df[col].mean(),
-                "Std": analysis_df[col].std(),
-                "Min": analysis_df[col].min(),
-                "Max": analysis_df[col].max(),
-                "Median": analysis_df[col].median()
+                "Company": _comp,
+                "Metric": _metric,
+                "Mean": analysis_df[_col].mean(),
+                "Std": analysis_df[_col].std(),
+                "Min": analysis_df[_col].min(),
+                "Max": analysis_df[_col].max(),
+                "Median": analysis_df[_col].median()
             })
     summary_df = pd.DataFrame(summary_stats)
     summary_df.to_csv(summary_path, index=False)
@@ -482,11 +478,6 @@ def _(analysis_df, companies_list, results_df, os, pd):
     """)
     
     return export_dir
-
-
-@app.cell
-def _():
-    return
 
 
 if __name__ == "__main__":
