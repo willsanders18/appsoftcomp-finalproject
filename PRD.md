@@ -99,6 +99,29 @@ A Jupyter notebook that performs correlation analysis between MAANG company stoc
 
 ---
 
+## Task 8: Lag Analysis
+- **Goal:** Analyze if internet usage changes predict future stock metric changes
+- **Inputs:** Analysis DataFrame with aligned stock and internet usage data
+- **Outputs:** Lag correlation results for 1-12 month lags
+- **Specification 1:** Calculate Pearson correlations between internet usage at time t and stock metrics at t+lag
+- **Specification 2:** Test lags from 1 to 12 months
+- **Specification 3:** Identify statistically significant lag correlations (p < 0.05)
+- **Specification 4:** Visualize lag correlations over time for each company and metric
+
+---
+
+## Task 9: Granger Causality Testing
+- **Goal:** Perform statistical Granger causality tests to identify predictive relationships
+- **Inputs:** Analysis DataFrame with aligned stock and internet usage data
+- **Outputs:** Granger test results with F-statistics and p-values
+- **Specification 1:** Test null hypothesis that internet usage does NOT Granger-cause stock metric changes
+- **Specification 2:** Use multiple test statistics (F-test, Chi-square, Likelihood ratio)
+- **Specification 3:** Test lags from 1 to 12 months
+- **Specification 4:** Summarize significant predictive relationships by company
+- **Specification 5:** Visualize p-values across different lags
+
+---
+
 ## Completed Features Summary
 
 **Data Pipeline:**
@@ -110,17 +133,23 @@ A Jupyter notebook that performs correlation analysis between MAANG company stoc
 - [x] Pearson and Spearman correlation calculations
 - [x] 30-day rolling volatility calculation
 - [x] Monthly aggregation of daily stock data
+- [x] Lag analysis (1-12 month lags)
+- [x] Granger causality testing
 
 **Visualizations:**
 - [x] Time series plots (price, volume, volatility vs internet usage)
 - [x] Correlation heatmaps
 - [x] Scatter plots with regression lines
 - [x] Rolling correlation plots (36-month window)
+- [x] Lag correlation plots
+- [x] Granger causality p-value plots
 - [x] Interactive Plotly charts with hover tooltips
 
 **Exports:**
 - [x] `data/exports/correlation_results.csv`
-- [x] `data/exports/correlation_results.xlsx`
+- [x] `data/exports/lag_analysis_results.csv`
+- [x] `data/exports/granger_causality_results.csv`
+- [x] `data/exports/full_analysis_results.xlsx`
 - [x] `data/exports/summary_statistics.csv`
 
 ---
