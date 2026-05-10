@@ -60,8 +60,12 @@ def _(pd):
     }
     
     analysis_df = pd.DataFrame(index=pivot_price.index)
+    log_sp500 = np.log(combined_df.pivot_table(index="YearMonth", values="SP500_Close")["SP500_Close"])
+    
     for _comp in companies_list:
-        analysis_df[f"{_comp}_Price"] = pivot_price[_comp]
+        log_price = np.log(pivot_price[_comp])
+        analysis_df[f"{_comp}_Price"] = log_price
+        analysis_df[f"{_comp}_RelativePrice"] = log_price - log_sp500
         analysis_df[f"{_comp}_Volume"] = pivot_volume[_comp]
         analysis_df[f"{_comp}_Volatility"] = pivot_volatility[_comp]
         analysis_df[f"{_comp}_InternetUsage"] = combined_df.pivot_table(
@@ -101,7 +105,7 @@ def _(analysis_df, companies_list, stats, pd):
     correlation_results = []
     
     for _comp in companies_list:
-        for _metric in ["Price", "Volume", "Volatility"]:
+        for _metric in ["Price", "RelativePrice", "Volume", "Volatility"]:
             _metric_col = f"{_comp}_{_metric}"
             _internet_col = f"{_comp}_InternetUsage"
             
@@ -171,8 +175,8 @@ def _(analysis_df, companies_list, go, make_subplots):
     for _comp in companies_list:
         fig_price.add_trace(go.Scatter(
             x=analysis_df.index,
-            y=analysis_df[f"{_comp}_Price"],
-            name=f"{_comp} Price",
+            y=analysis_df[f"{_comp}_RelativePrice"],
+            name=f"{_comp} Rel Price",
             line=dict(width=2),
             legendgroup=_comp,
             showlegend=True
@@ -189,13 +193,13 @@ def _(analysis_df, companies_list, go, make_subplots):
         ), secondary_y=True)
     
     fig_price.update_layout(
-        title="Interactive: Stock Price vs Internet Usage",
+        title="Interactive: Relative Log Price (vs S&P 500) vs Internet Usage",
         hovermode="x unified",
         height=600,
         legend_title="Companies"
     )
     fig_price.update_xaxes(title_text="Date")
-    fig_price.update_yaxes(title_text="Stock Price ($)", secondary_y=False)
+    fig_price.update_yaxes(title_text="Log Price Diff (vs S&P 500)", secondary_y=False)
     fig_price.update_yaxes(title_text="Internet Usage (Relative)", secondary_y=True)
     
     return fig_price
@@ -322,14 +326,14 @@ def _(mo):
 
 @app.cell
 def _(analysis_df, companies_list, go, make_subplots, np):
-    fig_scatter = make_subplots(rows=5, cols=3, subplot_titles=[
-        f"{_c} {_m}" for _c in companies_list for _m in ["Price", "Volume", "Volatility"]
+    fig_scatter = make_subplots(rows=5, cols=4, subplot_titles=[
+        f"{_c} {_m}" for _c in companies_list for _m in ["Price", "RelativePrice", "Volume", "Volatility"]
     ])
     
     colors_map = {"Price": "#1f77b4", "Volume": "#2ca02c", "Volatility": "#ff7f0e"}
     
     for _row_idx, _comp in enumerate(companies_list):
-        for _col_idx, (_metric, _color) in enumerate(zip(["Price", "Volume", "Volatility"], [colors_map["Price"], colors_map["Volume"], colors_map["Volatility"]])):
+        for _col_idx, (_metric, _color) in enumerate(zip(["Price", "RelativePrice", "Volume", "Volatility"], [colors_map["Price"], "#9467bd", colors_map["Volume"], colors_map["Volatility"]])):
             _x = analysis_df[f"{_comp}_InternetUsage"]
             _y = analysis_df[f"{_comp}_{_metric}"]
             _corr = np.corrcoef(_x, _y)[0, 1]
@@ -387,12 +391,12 @@ def _(mo):
 def _(analysis_df, companies_list, go, make_subplots):
     window = 36
     
-    fig_rolling = make_subplots(rows=5, cols=3, subplot_titles=[
-        f"{_c} {_m}" for _c in companies_list for _m in ["Price", "Volume", "Volatility"]
+    fig_rolling = make_subplots(rows=5, cols=4, subplot_titles=[
+        f"{_c} {_m}" for _c in companies_list for _m in ["Price", "RelativePrice", "Volume", "Volatility"]
     ])
     
     for _row_idx, _comp in enumerate(companies_list):
-        for _col_idx, _metric in enumerate(["Price", "Volume", "Volatility"]):
+        for _col_idx, _metric in enumerate(["Price", "RelativePrice", "Volume", "Volatility"]):
             _metric_col = f"{_comp}_{_metric}"
             _internet_col = f"{_comp}_InternetUsage"
             
@@ -437,7 +441,7 @@ def _(analysis_df, companies_list, stats, pd, np):
     max_lag = 12
     
     for _comp in companies_list:
-        for _metric in ["Price", "Volume", "Volatility"]:
+        for _metric in ["Price", "RelativePrice", "Volume", "Volatility"]:
             _metric_col = f"{_comp}_{_metric}"
             _internet_col = f"{_comp}_InternetUsage"
             
@@ -550,7 +554,7 @@ def _(analysis_df, companies_list, grangercausalitytests, pd, np):
     max_lag_gc = 12
     
     for _comp in companies_list:
-        for _metric in ["Price", "Volume", "Volatility"]:
+        for _metric in ["Price", "RelativePrice", "Volume", "Volatility"]:
             _metric_col = f"{_comp}_{_metric}"
             _internet_col = f"{_comp}_InternetUsage"
             
@@ -573,19 +577,20 @@ def _(analysis_df, companies_list, grangercausalitytests, pd, np):
                         if _lag_num in _gc_test:
                             _test_results = _gc_test[_lag_num][0]
                             for _test_name, _test_values in _test_results.items():
-                                _stat = _test_values[0]
-                                _pval = _test_values[1]
-                                granger_results.append({
-                                    "Company": _comp,
-                                    "Metric": _metric,
-                                    "Lag": _lag_num,
-                                    "Test": _test_name,
-                                    "F_statistic": _stat,
-                                    "p_value": _pval,
-                                    "Significant": _pval < 0.05
-                                })
+                                 _stat = _test_values[0]
+                                 _pval = _test_values[1]
+                                 granger_results.append({
+                                     "Company": _comp,
+                                     "Metric": _metric,
+                                     "Lag": _lag_num,
+                                     "Test": _test_name,
+                                     "F_statistic": _stat,
+                                     "p_value": _pval,
+                                     "Significant": _pval < 0.05
+                                 })
                 except Exception as e:
                     print(f"Granger test failed for {_comp} {_metric}: {e}")
+
     
     granger_results_df = pd.DataFrame(granger_results)
     
@@ -637,14 +642,14 @@ def _(granger_results_df, companies_list, go, make_subplots):
     if len(granger_results_df) > 0:
         _f_tests = granger_results_df[granger_results_df["Test"] == "ssr_ftest"]
         
-        fig_granger = make_subplots(rows=3, cols=2, subplot_titles=[f"{c} - All Metrics" for c in companies_list])
+        fig_granger = make_subplots(rows=5, cols=4, subplot_titles=[f"{c} - All Metrics" for c in companies_list])
         
-        _metrics = ["Price", "Volume", "Volatility"]
-        colors_gc = {"Price": "#1f77b4", "Volume": "#2ca02c", "Volatility": "#ff7f0e"}
+        _metrics = ["Price", "RelativePrice", "Volume", "Volatility"]
+        colors_gc = {"Price": "#1f77b4", "RelativePrice": "#9467bd", "Volume": "#2ca02c", "Volatility": "#ff7f0e"}
         
         for _idx, _comp in enumerate(companies_list):
-            _row = (_idx // 2) + 1
-            _col = (_idx % 2) + 1
+            _row = (_idx // 4) + 1
+            _col = (_idx % 4) + 1
             
             for _metric in _metrics:
                 _metric_data = _f_tests[(_f_tests["Company"] == _comp) & (_f_tests["Metric"] == _metric)]
@@ -658,11 +663,12 @@ def _(granger_results_df, companies_list, go, make_subplots):
                     showlegend=(_idx == 0),
                     hovertemplate=f"Lag: %{{x}} months<br>p-value: %{{y:.4f}}<extra>{_metric}</extra>"
                 ), row=_row, col=_col)
-            
             fig_granger.add_hline(y=0.05, line_dash="dash", line_color="red", opacity=0.7, row=_row, col=_col, annotation_text="p=0.05")
             fig_granger.update_yaxes(type="log", row=_row, col=_col)
             fig_granger.update_xaxes(title_text="Lag (Months)", row=_row, col=_col)
             fig_granger.update_yaxes(title_text="p-value (log scale)", row=_row, col=_col)
+ la
+
         
         fig_granger.update_layout(
             title="Granger Causality Test: Internet Usage -> Stock Metrics (p-values)",

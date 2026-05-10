@@ -11,8 +11,16 @@ import os
 from pathlib import Path
 
 
+def load_sp500_data(sp500_path: str) -> pd.DataFrame:
+    """Load and clean S&P 500 index data."""
+    df = pd.read_csv(sp500_path)
+    df["month"] = pd.to_datetime(df["month"])
+    df["Close"] = df["Close"].str.replace(",", "").astype(float)
+    df = df.rename(columns={"month": "YearMonth", "Close": "SP500_Close"})
+    df = df.sort_values("YearMonth").reset_index(drop=True)
+    return df
+
 def load_stock_data(data_dir: str, companies: list) -> dict:
-    """Load all stock CSV files into a dictionary of DataFrames."""
     stock_dfs = {}
     for company in companies:
         file_path = os.path.join(data_dir, f"{company}.csv")
@@ -114,9 +122,9 @@ def aggregate_to_monthly(stock_dfs: dict, companies: list) -> pd.DataFrame:
     return merged
 
 
-def align_datasets(monthly_stocks: pd.DataFrame, trend_df: pd.DataFrame) -> pd.DataFrame:
+def align_datasets(monthly_stocks: pd.DataFrame, trend_df: pd.DataFrame, sp500_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Align stock and trend data to overlapping time period.
+    Align stock, trend and S&P 500 data to overlapping time period.
     Merge on YearMonth to create combined analysis dataset.
     """
     min_date = trend_df["Month"].min()
@@ -135,6 +143,12 @@ def align_datasets(monthly_stocks: pd.DataFrame, trend_df: pd.DataFrame) -> pd.D
         how="inner"
     )
     
+    combined = combined.merge(
+        sp500_df,
+        on="YearMonth",
+        how="inner"
+    )
+
     print(f"Aligned dataset: {combined.shape[0]} rows, {combined.shape[1]} columns")
     print(f"Date range: {combined['YearMonth'].min()} to {combined['YearMonth'].max()}")
     
@@ -173,6 +187,7 @@ def main():
     base_dir = Path(__file__).parent
     raw_stock_dir = base_dir / "data" / "raw" / "company_stock_data"
     raw_trend_path = base_dir / "data" / "raw" / "company_trend_data" / "multiTimeline.csv"
+    raw_sp500_path = base_dir / "data" / "raw" / "company_stock_data" / "SP500.csv"
     cleaned_dir = base_dir / "data" / "cleaned"
     
     companies = ["Apple", "Amazon", "Google", "Microsoft", "Netflix"]
@@ -181,23 +196,26 @@ def main():
     print("MAANG Data Cleaning Pipeline")
     print("=" * 60)
     
-    print("\n[1/6] Loading stock data...")
+    print("\n[1/7] Loading stock data...")
     stock_dfs = load_stock_data(str(raw_stock_dir), companies)
     
-    print("\n[2/6] Loading trend data...")
+    print("\n[2/7] Loading S&P 500 data...")
+    sp500_df = load_sp500_data(str(raw_sp500_path))
+    
+    print("\n[3/7] Loading trend data...")
     trend_df = load_trend_data(str(raw_trend_path))
     
-    print("\n[3/6] Cleaning trend data...")
+    print("\n[4/7] Cleaning trend data...")
     trend_df_clean = clean_trend_data(trend_df)
     
-    print("\n[4/6] Cleaning stock data...")
+    print("\n[5/7] Cleaning stock data...")
     stock_dfs_clean = clean_stock_data(stock_dfs, companies)
     
-    print("\n[5/6] Aggregating stock data to monthly...")
+    print("\n[6/7] Aggregating stock data to monthly...")
     monthly_stocks = aggregate_to_monthly(stock_dfs_clean, companies)
     
-    print("\n[6/6] Aligning datasets...")
-    combined_df = align_datasets(monthly_stocks, trend_df_clean)
+    print("\n[7/7] Aligning datasets...")
+    combined_df = align_datasets(monthly_stocks, trend_df_clean, sp500_df)
     
     print("\n" + "=" * 60)
     print("Saving cleaned data...")
