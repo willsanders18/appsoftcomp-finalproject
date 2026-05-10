@@ -6,7 +6,7 @@
 #     "numpy==2.4.4",
 #     "pandas==3.0.2",
 #     "trendspyg==0.4.3",
-#     "scipy==1.15",
+#     "scipy==1.15.3",
 #     "seaborn==0.13.2",
 #     "plotly==6.7.0",
 #     "openpyxl==3.1.5",
